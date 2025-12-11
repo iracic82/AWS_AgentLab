@@ -2,6 +2,148 @@
 
 Build and deploy a production-ready AI agent using **Strands Agents SDK**, **MCP**, and **AWS Bedrock AgentCore**.
 
+---
+
+## What is an AI Agent?
+
+An **AI Agent** is an autonomous system that can reason, plan, and take actions to accomplish goals.
+
+### LLM vs Agent: The Key Difference
+
+| Capability | LLM Alone | Agent (LLM + Tools) |
+|------------|-----------|---------------------|
+| Answer questions | ✅ Based on training data only | ✅ Can fetch real-time data |
+| Access current information | ❌ Knowledge cutoff date | ✅ Query APIs, databases, web |
+| Take actions | ❌ Can only generate text | ✅ Create tickets, send alerts, deploy code |
+| Multi-step reasoning | ⚠️ Limited to single response | ✅ Plan → Execute → Observe → Iterate |
+
+**Without tools**: An LLM can only respond based on what it learned during training. Ask it "What's the weather in Seattle?" and it will say "I don't have access to real-time data."
+
+**With tools**: An agent can call a weather API, get current conditions, and give you an accurate answer.
+
+### The Three Components of an AI Agent
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         AI AGENT                                 │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                    1. LLM MODEL                          │    │
+│  │                                                          │    │
+│  │   The "brain" that:                                      │    │
+│  │   • Understands natural language                         │    │
+│  │   • Reasons about problems                               │    │
+│  │   • Decides WHEN to use tools                            │    │
+│  │   • Decides WHICH tool to use                            │    │
+│  │   • Interprets tool results                              │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              │                                   │
+│                              ▼                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                  2. SYSTEM PROMPT                        │    │
+│  │                                                          │    │
+│  │   The "instructions" that define:                        │    │
+│  │   • Agent's role and expertise                           │    │
+│  │   • How to approach problems                             │    │
+│  │   • Response format and style                            │    │
+│  │   • Constraints and guardrails                           │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              │                                   │
+│                              ▼                                   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                     3. TOOLS                             │    │
+│  │                                                          │    │
+│  │   The "capabilities" that allow the agent to:            │    │
+│  │   • Fetch real-time data (APIs, databases)               │    │
+│  │   • Take actions (create, update, delete)                │    │
+│  │   • Interact with external systems                       │    │
+│  │                                                          │    │
+│  │   [check_aws_status] [get_weather] [query_ipam]          │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Example: How an Agent Uses Tools
+
+```
+User: "Should I deploy to us-east-1?"
+
+Agent's reasoning (internal):
+1. "I need to check if it's safe to deploy"
+2. "I should check AWS service health" → calls check_aws_status("us-east-1")
+3. "I should check IP capacity" → calls check_subnet_capacity("us-east-1")
+4. "Let me analyze the results and give a recommendation"
+
+Agent's response:
+"Based on my checks:
+ ✓ AWS us-east-1: All services healthy
+ ⚠ IP Capacity: Only 23 IPs available (95% utilized)
+
+ RECOMMENDATION: CAUTION - Proceed but request more IPs soon."
+```
+
+The LLM **decides** when and which tools to call. The tools **execute** and return data. The LLM **interprets** results and responds.
+
+---
+
+## What is MCP (Model Context Protocol)?
+
+**MCP** is an open standard (created by Anthropic) for connecting AI models to external tools and data sources.
+
+### The Problem MCP Solves
+
+Before MCP, every AI framework had its own tool format:
+- LangChain tools
+- OpenAI function calling
+- Bedrock Agent action groups
+- Custom implementations
+
+This meant **rewriting the same tool for every framework**.
+
+### How MCP Works
+
+MCP defines a standard protocol for tool communication:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MCP Architecture                              │
+│                                                                  │
+│   ┌─────────────┐                    ┌─────────────────┐        │
+│   │   Your App  │                    │   MCP Server    │        │
+│   │   (Agent)   │◀──── MCP ─────────▶│   (Tool Host)   │        │
+│   │             │    Protocol        │                 │        │
+│   └─────────────┘                    └─────────────────┘        │
+│         │                                    │                   │
+│         │ "list tools"                       │                   │
+│         │ "call tool X"                      ▼                   │
+│         │ "get result"              ┌───────────────┐           │
+│         │                           │  External     │           │
+│         └──────────────────────────▶│  Services     │           │
+│                                     │  (APIs, DBs)  │           │
+│                                     └───────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### MCP Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **Write Once, Use Anywhere** | Build a tool server once, connect from any MCP client |
+| **Standardized Discovery** | Agents can discover available tools automatically |
+| **Language Agnostic** | Tool servers can be written in any language |
+| **Ecosystem** | Growing library of pre-built MCP servers |
+
+### MCP vs Direct Tool Integration
+
+| Approach | When to Use |
+|----------|-------------|
+| **Direct `@tool`** | Simple, single-use tools specific to your agent |
+| **MCP Server** | Reusable tools shared across multiple agents/apps |
+
+**This lab uses both approaches** - direct tools for custom logic, MCP for standardized external tools.
+
+---
+
 ## Why This Lab?
 
 AI agents are transforming how we automate complex workflows. But building production-ready agents requires more than just calling an LLM - you need:
@@ -9,6 +151,7 @@ AI agents are transforming how we automate complex workflows. But building produ
 - **Tool orchestration** - Agents that can use multiple tools intelligently
 - **Enterprise integrations** - Connect to real systems (IPAM, monitoring, etc.)
 - **Cloud deployment** - Scalable, secure, production-grade hosting
+- **Guardrails** - Prevent harmful outputs, ensure compliance
 - **Authentication** - OAuth 2.0, API security, access control
 
 This lab teaches all of that by building a **DevOps Decision Agent** that helps engineers decide if it's safe to deploy.
@@ -165,6 +308,138 @@ response = agent("Is AWS healthy in us-east-1?")
 ```
 
 **AgentCore microVMs** boot in milliseconds (not seconds like Lambda) because they use Firecracker - the same technology behind Lambda but optimized for long-running agent conversations.
+
+---
+
+## AgentCore: Production-Ready Agent Platform
+
+Amazon Bedrock AgentCore is a **modular set of capabilities** to build, deploy, and operate production-grade agents securely and scalably using **any framework and any model**.
+
+### AgentCore Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              Agent                                       │
+│              Any framework, any model, all popular protocols             │
+└───────────────────────────────┬─────────────────────────────────────────┘
+                                │
+              ┌─────────────────┼─────────────────┐
+              │                 │                 │
+           Build             Deploy            Assess
+              │                 │                 │
+              ▼                 ▼                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      AgentCore Native Resources                          │
+│                                                                          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐      │
+│  │  Memory  │ │ Built-in │ │ Gateways │ │ Identity │ │  Policy  │      │
+│  │          │ │  Tools   │ │          │ │          │ │          │      │
+│  │ Short &  │ │  Code    │ │  APIs,   │ │ Inbound  │ │  Auth    │      │
+│  │ Long-term│ │Interpret,│ │ Lambda   │ │ Outbound │ │ Control  │      │
+│  │ memory   │ │ Browser  │ │functions │ │  Auth    │ │          │      │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘      │
+│                                                                          │
+│  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────┐      │
+│  │    Observability     │  │     Evaluations      │  │ Runtime  │      │
+│  │  Monitor and debug   │  │ Pre-built & custom   │  │ Agents,  │      │
+│  │                      │  │    evaluators        │  │  tools   │      │
+│  └──────────────────────┘  └──────────────────────┘  └──────────┘      │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### AgentCore Capabilities Explained
+
+| Capability | What It Does | Why It Matters |
+|------------|--------------|----------------|
+| **Runtime** | Secure, serverless execution for agents and tools | Fast cold starts, session isolation, multi-modal support |
+| **Memory** | Short & long-term memory across sessions | Agents learn and retain context continuously |
+| **Built-in Tools** | Code interpreter, Browser | Production-ready tools without building from scratch |
+| **Gateways** | MCP, OpenAPI, REST API schemas | Call tools via standard protocols, no custom code |
+| **Identity** | Inbound & outbound authentication | Secure access control with OAuth/JWT providers |
+| **Policy** | Authorization control using Cedar | Define exactly what agents can do under what conditions |
+| **Observability** | Monitor and debug agents | Production visibility into agent behavior |
+| **Evaluations** | Pre-built and custom evaluators | Assess agent quality before and after deployment |
+
+### Runtime: The Core of AgentCore
+
+The **Runtime** is purpose-built for AI agents:
+
+- **Fast cold starts** - Millisecond startup using Firecracker microVMs
+- **Long-running execution** - Support for extended agent conversations
+- **True session isolation** - Each invocation runs in its own secure environment
+- **Built-in Identity** - Authentication handled at the platform level
+- **Multi-modal payloads** - Support for images, documents, and other content
+- **Framework agnostic** - Works with Strands, LangChain, or any framework
+
+### Policy: Guardrails for What Agents Can DO
+
+The **Policy** capability provides deterministic control over agent actions:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    AgentCore Policy Layer                        │
+│                                                                  │
+│   Uses Cedar (AWS's open-source policy language) to define:     │
+│                                                                  │
+│   • WHO can invoke the agent                                     │
+│   • WHAT tools the agent can use                                 │
+│   • WHEN actions are allowed (time-based rules)                  │
+│   • WHICH resources tools can access                             │
+│   • HOW much data can be processed                               │
+│                                                                  │
+│   Example Cedar Policy:                                          │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │ permit(                                                  │   │
+│   │   principal == User::"devops-team",                      │   │
+│   │   action == Action::"invoke-tool",                       │   │
+│   │   resource == Tool::"deploy-to-production"               │   │
+│   │ ) when {                                                 │   │
+│   │   context.time.hour >= 9 && context.time.hour <= 17      │   │
+│   │ };                                                       │   │
+│   └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key difference**:
+- **Guardrails** control what the LLM can *say* (content filtering)
+- **Policy** controls what tools can *do* (action authorization)
+
+### Identity: Secure Access Control
+
+AgentCore Identity integrates with leading identity providers:
+
+| Direction | What It Does | Use Case |
+|-----------|--------------|----------|
+| **Inbound Identity** | Authenticate callers to your agent | Verify users before allowing agent access |
+| **Outbound Identity** | Provide credentials to downstream resources | Agent securely accesses APIs, databases |
+
+This lab demonstrates inbound identity with **Amazon Cognito** (Steps 7a & 7b).
+
+### Gateways: Universal Tool Access
+
+Gateways support multiple protocols for connecting agents to tools:
+
+- **MCP (Model Context Protocol)** - Open standard for AI tools
+- **OpenAPI schemas** - Connect to any REST API
+- **Lambda functions** - Custom serverless tools
+- **Pre-configured integrations** - AWS services, common SaaS tools
+
+No custom code required - just configure and connect.
+
+### Why AgentCore is AWS's Flagship Agent Platform
+
+AWS is positioning AgentCore as the **primary platform for production AI agents**, consolidating capabilities that were previously fragmented:
+
+| Before (Bedrock Agents) | After (AgentCore) |
+|------------------------|-------------------|
+| Lambda for each tool | Single runtime for agent + tools |
+| Manual IAM per function | Unified identity layer |
+| No built-in memory | Short & long-term memory |
+| Custom observability | Built-in monitoring |
+| Basic guardrails | Policy + Guardrails + Evaluations |
+| Framework-specific | Framework agnostic |
+
+**Bottom line**: AgentCore is designed from the ground up for production agent workloads, while Bedrock Agents was an evolution of Lambda-based orchestration.
 
 ---
 
