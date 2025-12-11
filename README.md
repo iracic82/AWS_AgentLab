@@ -259,17 +259,111 @@ response = agent("Is AWS healthy in us-east-1?")
 
 ## Why AWS AgentCore?
 
-**AgentCore** is AWS's new serverless runtime specifically designed for AI agents:
+**AgentCore** is AWS's new serverless runtime specifically designed for AI agents.
 
-### AgentCore vs Traditional Hosting
+### Traditional Way vs AgentCore
 
-| Feature | EC2/ECS/Lambda | AgentCore |
-|---------|----------------|-----------|
-| **Cold Start** | Seconds | Milliseconds (microVMs) |
-| **Scaling** | Manual/Config | Automatic |
-| **Auth** | Build it yourself | Built-in OAuth/JWT |
-| **Logging** | CloudWatch setup | Automatic |
-| **Cost** | Pay for idle | Pay per invocation |
+**The Traditional Way** - You manage everything:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     TRADITIONAL AWS ARCHITECTURE                         │
+│                                                                          │
+│                              ┌─────────┐                                │
+│                              │   WAF   │                                │
+│                              └────┬────┘                                │
+│                                   │                                      │
+│                              ┌────▼────┐                                │
+│   Client ──────────────────▶│   API   │                                │
+│                              │ Gateway │                                │
+│                              └────┬────┘                                │
+│                                   │                                      │
+│          ┌────────────────────────┼────────────────────────┐            │
+│          │                        │                        │            │
+│     ┌────▼────┐             ┌────▼────┐             ┌────▼────┐        │
+│     │ Lambda  │             │ Lambda  │             │ Lambda  │        │
+│     │ Tool 1  │             │ Tool 2  │             │ Tool 3  │        │
+│     │         │             │         │             │         │        │
+│     │ IAM Role│             │ IAM Role│             │ IAM Role│        │
+│     │VPC Config│            │VPC Config│            │VPC Config│       │
+│     │Cold Start│            │Cold Start│            │Cold Start│       │
+│     └─────────┘             └─────────┘             └─────────┘        │
+│                                                                          │
+│   YOU MUST CONFIGURE AND MANAGE:                                        │
+│   ❌ API Gateway (stages, throttling, CORS, mappings)                   │
+│   ❌ Lambda functions (memory, timeout, VPC, layers)                    │
+│   ❌ IAM roles (one per function, least privilege)                      │
+│   ❌ WAF rules (SQL injection, XSS, rate limiting)                      │
+│   ❌ CloudWatch (logs, metrics, alarms, dashboards)                     │
+│   ❌ Auto-scaling policies                                              │
+│   ❌ Cold start optimization                                            │
+│   ❌ Authentication/Authorization                                        │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**The AgentCore Way** - You focus on your agent:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        AGENTCORE ARCHITECTURE                            │
+│                                                                          │
+│                                                                          │
+│   Client ──────────────────▶ AgentCore Runtime ──▶ Your Agent Code     │
+│                                     │                                    │
+│                                     │                                    │
+│                    ┌────────────────┼────────────────┐                  │
+│                    │                │                │                  │
+│                    ▼                ▼                ▼                  │
+│              ┌──────────┐    ┌──────────┐    ┌──────────┐              │
+│              │ ✅ Auth  │    │ ✅ Scale │    │ ✅ Logs  │              │
+│              │ Built-in │    │ Automatic│    │ Automatic│              │
+│              └──────────┘    └──────────┘    └──────────┘              │
+│                    │                │                │                  │
+│                    ▼                ▼                ▼                  │
+│              ┌──────────┐    ┌──────────┐    ┌──────────┐              │
+│              │ ✅ Memory│    │ ✅ Policy│    │✅ Gateway│              │
+│              │ Built-in │    │ Built-in │    │ Built-in │              │
+│              └──────────┘    └──────────┘    └──────────┘              │
+│                                                                          │
+│   YOU MANAGE: Your agent code. That's it.                               │
+│                                                                          │
+│   AGENTCORE HANDLES AUTOMATICALLY:                                       │
+│   ✅ HTTP endpoint with OAuth/JWT authentication                        │
+│   ✅ Firecracker microVM (millisecond cold starts)                      │
+│   ✅ Auto-scaling based on demand                                       │
+│   ✅ Logging and observability                                          │
+│   ✅ Memory management across sessions                                  │
+│   ✅ Policy enforcement (who can do what)                               │
+│   ✅ Gateway for tool access (MCP, OpenAPI, Lambda)                     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### The Comparison
+
+| Component | Traditional AWS | AgentCore |
+|-----------|-----------------|-----------|
+| **HTTP Endpoint** | API Gateway + stages + mappings | ✅ Automatic |
+| **Authentication** | Cognito + API GW authorizer + config | ✅ Built-in Identity |
+| **Compute** | Lambda or ECS + IAM + VPC | ✅ Firecracker microVM |
+| **Cold Start** | Seconds (optimize yourself) | ✅ Milliseconds |
+| **Scaling** | Configure Auto Scaling policies | ✅ Automatic |
+| **Logging** | CloudWatch setup + log groups | ✅ Automatic |
+| **Memory/State** | DynamoDB + your code | ✅ Built-in Memory |
+| **Tool Access** | Build integrations yourself | ✅ Built-in Gateways |
+| **Security** | WAF + IAM + custom logic | ✅ Policy + Guardrails |
+
+### Your Deployment is Just 3 Commands
+
+```bash
+# 1. Configure
+agentcore configure -e handler.py -r us-west-2 -n my_agent
+
+# 2. Deploy
+agentcore deploy
+
+# 3. Done. You have a production endpoint.
+agentcore invoke '{"prompt": "Should I deploy to us-east-1?"}'
+```
 
 ### How AgentCore Works
 
