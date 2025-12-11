@@ -142,6 +142,81 @@ MCP defines a standard protocol for tool communication:
 
 **This lab uses both approaches** - direct tools for custom logic, MCP for standardized external tools.
 
+### Local vs Remote MCP Servers
+
+MCP servers can run in two modes:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      LOCAL MCP SERVER (stdio)                            │
+│                                                                          │
+│   Your Machine                                                           │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │                                                                 │   │
+│   │   Your Agent                       MCP Server (Local Process)  │   │
+│   │   ┌─────────────┐                 ┌─────────────────────────┐  │   │
+│   │   │   Python    │───stdin────────▶│  mcp-server-fetch       │  │   │
+│   │   │   Process   │◀──stdout────────│  (spawned by uvx)       │  │   │
+│   │   └─────────────┘                 └───────────┬─────────────┘  │   │
+│   │                                               │                 │   │
+│   └───────────────────────────────────────────────┼─────────────────┘   │
+│                                                   │                      │
+│   ✅ No network setup needed                      ▼ HTTP                │
+│   ✅ Fast (local pipes)                   ┌───────────────┐              │
+│   ✅ Good for development                 │   Internet    │              │
+│   ❌ Can't share across machines          └───────────────┘              │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     REMOTE MCP SERVER (HTTP)                             │
+│                                                                          │
+│   Your Machine                              Cloud / Server               │
+│   ┌─────────────────────┐                  ┌─────────────────────┐      │
+│   │                     │                  │                     │      │
+│   │   Your Agent        │───HTTPS─────────▶│   MCP Server        │      │
+│   │   ┌─────────────┐   │   + OAuth        │   (AgentCore        │      │
+│   │   │   Python    │   │   Bearer Token   │    Gateway)         │      │
+│   │   │   Process   │◀──┼──────────────────│                     │      │
+│   │   └─────────────┘   │                  └──────────┬──────────┘      │
+│   │                     │                             │                  │
+│   └─────────────────────┘                             ▼                  │
+│                                               ┌───────────────┐          │
+│   ✅ Shared across clients                    │  Lambda Tools │          │
+│   ✅ Centralized auth                         │  APIs, etc.   │          │
+│   ✅ Production ready                         └───────────────┘          │
+│   ❌ Requires network/auth setup                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**This lab demonstrates both:**
+
+| Step | MCP Type | Transport | Example |
+|------|----------|-----------|---------|
+| **Step 4** | Local | stdio (pipes) | `uvx mcp-server-fetch` runs on your machine |
+| **Step 7b** | Remote | HTTP + OAuth | AgentCore Gateway with JWT authentication |
+
+**Code comparison:**
+
+```python
+# LOCAL MCP (Step 4) - spawns process on your machine
+from mcp import stdio_client, StdioServerParameters
+
+mcp_client = MCPClient(lambda: stdio_client(
+    StdioServerParameters(
+        command="uvx",
+        args=["mcp-server-fetch"]  # Runs locally
+    )
+))
+
+# REMOTE MCP (Step 7b) - connects to cloud endpoint
+from mcp.client.streamable_http import streamablehttp_client
+
+mcp_client = MCPClient(lambda: streamablehttp_client(
+    "https://gateway-id.gateway.bedrock-agentcore.us-west-2.amazonaws.com/mcp",
+    headers={"Authorization": f"Bearer {oauth_token}"}
+))
+```
+
 ---
 
 ## Why This Lab?
