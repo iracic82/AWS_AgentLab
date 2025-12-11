@@ -24,11 +24,11 @@ Infoblox CSP API:
 - Endpoint: /ipam/subnet for subnet info
 
 Environment Variables Required:
-- IPAM_API_KEY: Your Infoblox CSP API key
-- IPAM_BASE_URL: (Optional) Custom CSP URL
+- IPAM_API_KEY: Your Infoblox CSP API key (optional - uses mock data if not set)
 
 Run: python lab/exercises/step3b_ipam_tool.py
 Test: python lab/tests/test_step3b.py
+Solution: lab/solutions/step3b_ipam_tool.py
 """
 
 import os
@@ -39,131 +39,10 @@ from strands.models import BedrockModel
 
 
 # =============================================================================
-# TODO 1: Create the IPAM tool function
+# TODO 1: Create the mock data function
 # =============================================================================
-
-# The tool should:
-#   - Take a region/subnet identifier as input
-#   - Connect to Infoblox CSP API
-#   - Get subnet utilization data
-#   - Return capacity info (total IPs, used, available, utilization %)
-#
-# Hint:
-# @tool
-# def check_subnet_capacity(region: str, min_required_ips: int = 10) -> dict:
-#     """
-#     Check if a subnet has enough available IP addresses for deployment.
-#
-#     Args:
-#         region: The region/subnet identifier to check (e.g., "us-west-2", "prod-vpc-1")
-#         min_required_ips: Minimum number of free IPs needed for deployment (default: 10)
-#
-#     Returns:
-#         Dictionary with subnet capacity info and deployment recommendation
-#     """
-#     api_key = os.getenv("IPAM_API_KEY")
-#     base_url = os.getenv("IPAM_BASE_URL", "https://csp.infoblox.com/api/ddi/v1")
-#
-#     if not api_key:
-#         return {
-#             "status": "error",
-#             "message": "IPAM_API_KEY not configured",
-#             "recommendation": "CAUTION - Cannot verify IP capacity"
-#         }
-#
-#     try:
-#         # Query Infoblox CSP for subnet info
-#         headers = {
-#             "Authorization": f"Token {api_key}",
-#             "Content-Type": "application/json"
-#         }
-#
-#         # Search for subnet by region tag or name
-#         response = requests.get(
-#             f"{base_url}/ipam/subnet",
-#             headers=headers,
-#             params={"_filter": f"tags~'{region}' or comment~'{region}'"},
-#             timeout=10
-#         )
-#         response.raise_for_status()
-#
-#         data = response.json()
-#         subnets = data.get("results", [])
-#
-#         if not subnets:
-#             return {
-#                 "region": region,
-#                 "status": "not_found",
-#                 "message": f"No subnet found for region: {region}",
-#                 "recommendation": "CAUTION - Subnet not in IPAM"
-#             }
-#
-#         # Aggregate capacity across matching subnets
-#         total_ips = 0
-#         used_ips = 0
-#         available_ips = 0
-#
-#         for subnet in subnets:
-#             util = subnet.get("utilization", {})
-#             total_ips += util.get("total", 0)
-#             used_ips += util.get("used", 0)
-#             available_ips += util.get("available", 0)
-#
-#         utilization_percent = (used_ips / total_ips * 100) if total_ips > 0 else 0
-#
-#         # Determine recommendation
-#         if available_ips >= min_required_ips and utilization_percent < 80:
-#             recommendation = "GO"
-#             status = "healthy"
-#         elif available_ips >= min_required_ips:
-#             recommendation = "CAUTION"
-#             status = "warning"
-#         else:
-#             recommendation = "NO-GO"
-#             status = "critical"
-#
-#         return {
-#             "region": region,
-#             "status": status,
-#             "total_ips": total_ips,
-#             "used_ips": used_ips,
-#             "available_ips": available_ips,
-#             "utilization_percent": round(utilization_percent, 1),
-#             "min_required": min_required_ips,
-#             "recommendation": recommendation,
-#             "message": f"{available_ips} IPs available ({utilization_percent:.1f}% utilized)"
-#         }
-#
-#     except requests.exceptions.RequestException as e:
-#         return {
-#             "region": region,
-#             "status": "error",
-#             "message": f"IPAM API error: {str(e)}",
-#             "recommendation": "CAUTION - Could not verify IP capacity"
-#         }
-
-@tool
-def check_subnet_capacity(region: str, min_required_ips: int = 10) -> dict:
-    """
-    Check if a subnet has enough available IP addresses for deployment.
-
-    Args:
-        region: The region/subnet identifier to check (e.g., "us-west-2", "prod-vpc-1")
-        min_required_ips: Minimum number of free IPs needed for deployment (default: 10)
-
-    Returns:
-        Dictionary with subnet capacity info and deployment recommendation
-    """
-    # TODO: Implement this function following the hint above
-    pass
-
-
-# =============================================================================
-# TODO 2: Create a mock version for testing without CSP access
-# =============================================================================
-
 # For lab environments without Infoblox CSP access, create a mock that
-# simulates realistic responses.
+# simulates realistic responses for different regions.
 #
 # Hint:
 # def get_mock_subnet_data(region: str) -> dict:
@@ -179,46 +58,96 @@ def check_subnet_capacity(region: str, min_required_ips: int = 10) -> dict:
 def get_mock_subnet_data(region: str) -> dict:
     """Return mock subnet data for testing."""
     # TODO: Implement mock data for different regions
+    # Return a dict with "total", "used", "available" keys
     pass
 
 
 # =============================================================================
-# TODO 3: Update the tool to use mock data when IPAM_API_KEY is not set
+# TODO 2: Create the IPAM tool function
 # =============================================================================
+# The tool should:
+#   1. Check for IPAM_API_KEY environment variable
+#   2. If no API key, use mock data (for lab/testing)
+#   3. If API key exists, query Infoblox CSP
+#   4. Calculate utilization percentage
+#   5. Return GO/CAUTION/NO-GO recommendation based on capacity
+#
+# @tool decorator makes this function available to the agent
 
-# Modify check_subnet_capacity to fall back to mock data when no API key
-# This allows the lab to work without real Infoblox access
-#
-# Add this at the start of check_subnet_capacity:
-#
-#     # Use mock data if no API key (for lab/testing)
-#     if not api_key:
-#         mock = get_mock_subnet_data(region)
-#         available = mock["available"]
-#         utilization = (mock["used"] / mock["total"] * 100) if mock["total"] > 0 else 0
-#
-#         if available >= min_required_ips and utilization < 80:
-#             recommendation = "GO"
-#             status = "healthy"
-#         elif available >= min_required_ips:
-#             recommendation = "CAUTION"
-#             status = "warning"
-#         else:
-#             recommendation = "NO-GO"
-#             status = "critical"
-#
-#         return {
-#             "region": region,
-#             "status": status,
-#             "total_ips": mock["total"],
-#             "used_ips": mock["used"],
-#             "available_ips": available,
-#             "utilization_percent": round(utilization, 1),
-#             "min_required": min_required_ips,
-#             "recommendation": recommendation,
-#             "message": f"{available} IPs available ({utilization:.1f}% utilized)",
-#             "source": "mock_data"  # Indicates this is simulated
-#         }
+# TODO: Add the @tool decorator here
+def check_subnet_capacity(region: str, min_required_ips: int = 10) -> dict:
+    """
+    Check if a subnet has enough available IP addresses for deployment.
+
+    Args:
+        region: The region/subnet identifier to check (e.g., "us-west-2", "prod-vpc-1")
+        min_required_ips: Minimum number of free IPs needed for deployment (default: 10)
+
+    Returns:
+        Dictionary with subnet capacity info and deployment recommendation
+    """
+    api_key = os.getenv("IPAM_API_KEY")
+    base_url = os.getenv("IPAM_BASE_URL", "https://csp.infoblox.com/api/ddi/v1")
+
+    # TODO 2a: Handle the case when no API key is set (use mock data)
+    # If api_key is None or empty, use get_mock_subnet_data(region)
+    # Calculate utilization and return appropriate recommendation
+    #
+    # Hint:
+    # if not api_key:
+    #     mock = get_mock_subnet_data(region)
+    #     if mock is None:
+    #         return {"status": "error", "message": "Mock data not implemented"}
+    #
+    #     available = mock["available"]
+    #     utilization = (mock["used"] / mock["total"] * 100) if mock["total"] > 0 else 0
+    #
+    #     # Determine recommendation
+    #     if available >= min_required_ips and utilization < 80:
+    #         recommendation = "GO"
+    #         status = "healthy"
+    #     elif available >= min_required_ips:
+    #         recommendation = "CAUTION"
+    #         status = "warning"
+    #     else:
+    #         recommendation = "NO-GO"
+    #         status = "critical"
+    #
+    #     return {
+    #         "region": region,
+    #         "status": status,
+    #         "total_ips": mock["total"],
+    #         "used_ips": mock["used"],
+    #         "available_ips": available,
+    #         "utilization_percent": round(utilization, 1),
+    #         "min_required": min_required_ips,
+    #         "recommendation": recommendation,
+    #         "message": f"{available} IPs available ({utilization:.1f}% utilized)",
+    #         "source": "mock_data"
+    #     }
+
+    # Your code here for handling mock data
+    pass
+
+    # TODO 2b: Handle the case when API key IS set (query real Infoblox CSP)
+    # This is optional for the lab - the mock data path is sufficient
+    #
+    # Hint for real API:
+    # try:
+    #     headers = {
+    #         "Authorization": f"Token {api_key}",
+    #         "Content-Type": "application/json"
+    #     }
+    #     response = requests.get(
+    #         f"{base_url}/ipam/subnet",
+    #         headers=headers,
+    #         params={"_filter": f"tags~'{region}' or comment~'{region}'"},
+    #         timeout=10
+    #     )
+    #     response.raise_for_status()
+    #     # ... process response ...
+    # except requests.exceptions.RequestException as e:
+    #     return {"status": "error", "message": str(e)}
 
 
 def test_ipam_tool():
@@ -253,6 +182,7 @@ def main():
     # First test the tool directly
     if not test_ipam_tool():
         print("\nERROR: Complete the TODOs first!")
+        print("Hint: Check lab/solutions/step3b_ipam_tool.py if stuck")
         return
 
     print("\n" + "=" * 60)

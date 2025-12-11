@@ -18,6 +18,7 @@ API Info:
 
 Run: python lab/exercises/step3_aws_status_tool.py
 Test: python lab/tests/test_step3.py
+Solution: lab/solutions/step3_aws_status_tool.py
 """
 
 import requests
@@ -28,14 +29,14 @@ from strands.models import BedrockModel
 # Import your weather tool from Step 2
 # We'll combine both tools in one agent!
 try:
-    from lab.exercises.step2_weather_tool import get_weather_forecast
-except ImportError:
-    # Fallback if step2 not completed
     from lab.solutions.step2_weather_tool import get_weather_forecast
+except ImportError:
+    get_weather_forecast = None
 
 
-# TODO 1: Add the @tool decorator
-@tool
+# TODO 1: Add the @tool decorator above this function
+# Hint: Just add @tool on the line before 'def check_aws_status'
+
 def check_aws_status(region: str = "us-east-1") -> dict:
     """
     Check AWS service health status for a specific region.
@@ -59,16 +60,12 @@ def check_aws_status(region: str = "us-east-1") -> dict:
     #     headers={"User-Agent": "DevOpsAgent/1.0"}
     # )
 
-    response = requests.get(
-        "https://status.aws.amazon.com/rss/all.rss",
-        timeout=10,
-        headers={"User-Agent": "DevOpsAgent/1.0"}
-    )
+    response = None  # Replace with your code
 
     # TODO 3: Check if the request was successful
     # Use response.raise_for_status()
 
-    response.raise_for_status()
+    # Your code here
 
     # TODO 4: Check if the region is mentioned in the RSS feed content
     # Convert response.text to lowercase and check if region.lower() is in it
@@ -77,8 +74,7 @@ def check_aws_status(region: str = "us-east-1") -> dict:
     # content = response.text.lower()
     # region_mentioned = region.lower() in content
 
-    content = response.text.lower()
-    region_mentioned = region.lower() in content
+    region_mentioned = False  # Replace with your code
 
     # TODO 5: Return appropriate status based on whether region is mentioned
     # If region is mentioned in the feed, there might be issues
@@ -100,20 +96,7 @@ def check_aws_status(region: str = "us-east-1") -> dict:
     #         "recommendation": "Safe to proceed with deployment"
     #     }
 
-    if region_mentioned:
-        return {
-            "region": region,
-            "status": "check_needed",
-            "message": f"AWS status feed mentions {region}. Check health dashboard.",
-            "recommendation": "Review AWS Health Dashboard before deploying"
-        }
-    else:
-        return {
-            "region": region,
-            "status": "healthy",
-            "message": f"No recent issues found for {region}.",
-            "recommendation": "Safe to proceed with deployment"
-        }
+    return {}  # Replace with your code
 
 
 def create_agent_with_both_tools():
@@ -125,10 +108,11 @@ def create_agent_with_both_tools():
 
     # TODO 6: Create an agent with BOTH tools
     # Pass tools=[get_weather_forecast, check_aws_status] to the Agent
+    # Note: get_weather_forecast is imported from Step 2
     #
     # Hint: agent = Agent(model=model, tools=[get_weather_forecast, check_aws_status])
 
-    agent = Agent(model=model, tools=[get_weather_forecast, check_aws_status])
+    agent = None  # Replace with your code
 
     return agent
 
@@ -142,6 +126,7 @@ def main():
 
     if not result.get("status"):
         print("\nERROR: Tool not returning data. Complete the TODOs!")
+        print("Hint: Check lab/solutions/step3_aws_status_tool.py if stuck")
         return
 
     print("\nCreating agent with BOTH tools...")

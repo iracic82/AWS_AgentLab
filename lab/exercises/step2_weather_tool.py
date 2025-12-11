@@ -18,6 +18,7 @@ API Info:
 
 Run: python lab/exercises/step2_weather_tool.py
 Test: python lab/tests/test_step2.py
+Solution: lab/solutions/step2_weather_tool.py
 """
 
 import requests
@@ -28,7 +29,7 @@ from strands.models import BedrockModel
 
 # TODO 1: Add the @tool decorator above this function
 # Hint: Just add @tool on the line before 'def get_weather_forecast'
-@tool
+
 def get_weather_forecast(city: str) -> dict:
     """
     Get current weather and forecast for a city.
@@ -52,11 +53,7 @@ def get_weather_forecast(city: str) -> dict:
     #     headers={"User-Agent": "DevOpsAgent/1.0"}
     # )
 
-    response = requests.get(
-        f"https://wttr.in/{city}?format=j1",
-        timeout=10,
-        headers={"User-Agent": "DevOpsAgent/1.0"}
-    )
+    response = None  # Replace with your code
 
     # TODO 3: Check if the request was successful and parse JSON
     # Use response.raise_for_status() to check for errors
@@ -66,8 +63,7 @@ def get_weather_forecast(city: str) -> dict:
     # response.raise_for_status()
     # data = response.json()
 
-    response.raise_for_status()
-    data = response.json()
+    data = None  # Replace with your code
 
     # TODO 4: Extract the current conditions from the response
     # The API returns data in this structure:
@@ -80,7 +76,7 @@ def get_weather_forecast(city: str) -> dict:
     # Hint:
     # current = data.get("current_condition", [{}])[0]
 
-    current = data.get("current_condition", [{}])[0]
+    current = None  # Replace with your code
 
     # TODO 5: Return a dictionary with the extracted weather data
     # Include: city, temperature_c, temperature_f, condition, humidity, wind_speed_kmph
@@ -95,14 +91,7 @@ def get_weather_forecast(city: str) -> dict:
     #     "wind_speed_kmph": current.get("windspeedKmph"),
     # }
 
-    return {
-        "city": city,
-        "temperature_c": current.get("temp_C"),
-        "temperature_f": current.get("temp_F"),
-        "condition": current.get("weatherDesc", [{}])[0].get("value"),
-        "humidity": current.get("humidity"),
-        "wind_speed_kmph": current.get("windspeedKmph"),
-    }
+    return {}  # Replace with your code
 
 
 def create_agent_with_tool():
@@ -117,7 +106,7 @@ def create_agent_with_tool():
     #
     # Hint: agent = Agent(model=model, tools=[get_weather_forecast])
 
-    agent = Agent(model=model, tools=[get_weather_forecast])
+    agent = None  # Replace with your code
 
     return agent
 
@@ -132,6 +121,7 @@ def main():
 
     if not result.get("temperature_c"):
         print("\nERROR: Tool not returning data. Complete the TODOs!")
+        print("Hint: Check lab/solutions/step2_weather_tool.py if stuck")
         return
 
     print("\nCreating agent with weather tool...")

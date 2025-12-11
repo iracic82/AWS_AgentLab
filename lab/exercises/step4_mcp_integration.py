@@ -15,6 +15,7 @@ MCP Info:
 - MCP is a standard for connecting AI to external tools
 - We'll use the "fetch" MCP server - it can fetch any URL
 - This gives our agent access to any web API or page
+- This is a LOCAL MCP server (runs on your machine via stdio)
 
 Prerequisites:
 - Python uvx installed (comes with uv)
@@ -22,6 +23,7 @@ Prerequisites:
 
 Run: python lab/exercises/step4_mcp_integration.py
 Test: python lab/tests/test_step4.py
+Solution: lab/solutions/step4_mcp_integration.py
 """
 
 from mcp import stdio_client, StdioServerParameters
@@ -29,13 +31,13 @@ from strands import Agent
 from strands.tools.mcp import MCPClient
 from strands.models import BedrockModel
 
-# Import your tools from previous steps
+# Import your tools from previous steps (use solutions as fallback)
 try:
-    from lab.exercises.step2_weather_tool import get_weather_forecast
-    from lab.exercises.step3_aws_status_tool import check_aws_status
-except ImportError:
     from lab.solutions.step2_weather_tool import get_weather_forecast
     from lab.solutions.step3_aws_status_tool import check_aws_status
+except ImportError:
+    get_weather_forecast = None
+    check_aws_status = None
 
 
 def create_mcp_client():
@@ -58,12 +60,7 @@ def create_mcp_client():
     #     )
     # ))
 
-    mcp_client = MCPClient(lambda: stdio_client(
-        StdioServerParameters(
-            command="uvx",
-            args=["mcp-server-fetch"]
-        )
-    ))
+    mcp_client = None  # Replace with your code
 
     return mcp_client
 
@@ -81,14 +78,15 @@ def create_agent_with_mcp_and_custom_tools(mcp_client):
     #
     # Hint: mcp_tools = mcp_client.list_tools_sync()
 
-    mcp_tools = mcp_client.list_tools_sync()
+    mcp_tools = None  # Replace with your code
 
     # TODO 3: Combine custom tools with MCP tools
     # Create a list with your custom tools first, then add MCP tools
+    # Note: get_weather_forecast and check_aws_status are imported from solutions
     #
     # Hint: all_tools = [get_weather_forecast, check_aws_status] + mcp_tools
 
-    all_tools = [get_weather_forecast, check_aws_status] + mcp_tools
+    all_tools = None  # Replace with your code
 
     # TODO 4: Create the agent with all tools
     # Use BedrockModel and pass all_tools to the Agent
@@ -100,11 +98,7 @@ def create_agent_with_mcp_and_custom_tools(mcp_client):
     # )
     # agent = Agent(model=model, tools=all_tools)
 
-    model = BedrockModel(
-        model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-        region_name="us-west-2"
-    )
-    agent = Agent(model=model, tools=all_tools)
+    agent = None  # Replace with your code
 
     return agent
 
@@ -116,6 +110,7 @@ def main():
 
     if mcp_client is None:
         print("ERROR: MCP client not created. Complete TODO 1!")
+        print("Hint: Check lab/solutions/step4_mcp_integration.py if stuck")
         return
 
     # TODO 5: Use the MCP client with a context manager
@@ -129,26 +124,24 @@ def main():
     #     print(response)
 
     print("Connecting to MCP server...")
+    print("TODO 5: Implement the context manager pattern")
+    print("Hint: Check lab/solutions/step4_mcp_integration.py if stuck")
 
-    # Replace this with the context manager pattern from TODO 5
-    with mcp_client:
-        print("MCP connected! Creating agent...")
-        agent = create_agent_with_mcp_and_custom_tools(mcp_client)
-
-        if agent is None:
-            print("ERROR: Agent not created. Complete TODOs 2-4!")
-            return
-
-        print("\nTesting agent with a question that uses all tool types...")
-        response = agent("""
-        I want to deploy today. Please:
-        1. Check AWS status for us-west-2
-        2. Check weather in Oregon
-        3. Fetch https://www.githubstatus.com/api/v2/status.json to check GitHub
-
-        Should I deploy?
-        """)
-        print(f"\nAgent response:\n{response}")
+    # Replace this with your implementation:
+    # with mcp_client:
+    #     print("MCP connected! Creating agent...")
+    #     agent = create_agent_with_mcp_and_custom_tools(mcp_client)
+    #
+    #     print("\nTesting agent with a question that uses all tool types...")
+    #     response = agent("""
+    #     I want to deploy today. Please:
+    #     1. Check AWS status for us-west-2
+    #     2. Check weather in Oregon
+    #     3. Fetch https://www.githubstatus.com/api/v2/status.json to check GitHub
+    #
+    #     Should I deploy?
+    #     """)
+    #     print(f"\nAgent response:\n{response}")
 
 
 if __name__ == "__main__":

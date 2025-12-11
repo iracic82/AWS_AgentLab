@@ -18,20 +18,21 @@ What is a System Prompt?
 
 Run: python lab/exercises/step5_system_prompt.py
 Test: python lab/tests/test_step5.py
+Solution: lab/solutions/step5_system_prompt.py
 """
 
 from strands import Agent
 from strands.models import BedrockModel
 
-# Import your tools from previous steps
+# Import your tools from previous steps (use solutions as fallback)
 try:
-    from lab.exercises.step2_weather_tool import get_weather_forecast
-    from lab.exercises.step3_aws_status_tool import check_aws_status
-    from lab.exercises.step3b_ipam_tool import check_subnet_capacity
-except ImportError:
     from lab.solutions.step2_weather_tool import get_weather_forecast
     from lab.solutions.step3_aws_status_tool import check_aws_status
     from lab.solutions.step3b_ipam_tool import check_subnet_capacity
+except ImportError:
+    get_weather_forecast = None
+    check_aws_status = None
+    check_subnet_capacity = None
 
 
 # TODO 1: Write a system prompt for your DevOps Decision Agent
@@ -47,29 +48,25 @@ except ImportError:
 # When asked about deployments:
 # - Check [factor 1]
 # - Check [factor 2]
+# - Check [factor 3]
 # - Provide a clear recommendation: GO / NO-GO / CAUTION
 # - Explain your reasoning
 #
 # Be [tone] and [style].
 # """
+#
+# Hint - a good system prompt includes:
+# 1. Role definition: "You are a DevOps Decision Assistant..."
+# 2. Task description: "Your job is to help engineers make deployment decisions..."
+# 3. Tool usage instructions: "Use check_aws_status, get_weather_forecast, check_subnet_capacity..."
+# 4. Response format: "Provide a clear GO / NO-GO / CAUTION recommendation..."
+# 5. Style guidance: "Be concise but thorough..."
 
-SYSTEM_PROMPT = """You are a DevOps Decision Assistant. Your job is to help engineers
-make informed deployment decisions by analyzing multiple factors.
+SYSTEM_PROMPT = """
+TODO: Write your system prompt here!
 
-When asked about deployments, you should:
-1. Check AWS Service Health - Use the check_aws_status tool to verify no ongoing incidents
-2. Check Weather Conditions - Use get_weather_forecast for the datacenter region (severe weather can affect infrastructure)
-3. Check IP Capacity - Use check_subnet_capacity to verify enough IP addresses are available for new instances
-
-After gathering information, provide a clear recommendation:
-- GO: All systems healthy, proceed with deployment
-- CAUTION: Minor concerns, proceed with extra monitoring
-- NO-GO: Significant issues detected, delay deployment
-
-Always explain your reasoning based on the data you collected.
-
-Be concise but thorough. Engineers need quick, actionable information.
-Format your final recommendation prominently so it's easy to spot.
+Replace this placeholder with your DevOps Decision Agent system prompt.
+See the hints above for guidance.
 """
 
 
@@ -93,11 +90,7 @@ def create_devops_agent():
     #     tools=[get_weather_forecast, check_aws_status, check_subnet_capacity]
     # )
 
-    agent = Agent(
-        model=model,
-        system_prompt=SYSTEM_PROMPT,
-        tools=[get_weather_forecast, check_aws_status, check_subnet_capacity]
-    )
+    agent = None  # Replace with your code
 
     return agent
 
@@ -129,20 +122,23 @@ def run_interactive():
     #     print(f"\nAgent: {response}\n")
 
     print("TODO 3: Implement the interactive loop")
+    print("Hint: Check lab/solutions/step5_system_prompt.py if stuck")
 
 
 def main():
     """Test the DevOps agent."""
     print("Creating DevOps Decision Agent...")
 
+    # Check if system prompt was written
+    if "TODO" in SYSTEM_PROMPT or not SYSTEM_PROMPT.strip():
+        print("ERROR: System prompt not written. Complete TODO 1!")
+        print("Hint: Check lab/solutions/step5_system_prompt.py for example")
+        return
+
     agent = create_devops_agent()
 
     if agent is None:
         print("ERROR: Agent not created. Complete TODO 2!")
-        return
-
-    if not SYSTEM_PROMPT.strip() or "TODO" in SYSTEM_PROMPT:
-        print("ERROR: System prompt not written. Complete TODO 1!")
         return
 
     print(f"System prompt length: {len(SYSTEM_PROMPT)} characters")
