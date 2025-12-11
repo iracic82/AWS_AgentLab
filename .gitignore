@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+
+# Environment and secrets
+.env
+.env.*
+*.env
+cognito_config.json
+gateway_config.json
+*_config.json
+secrets.json
+credentials.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# AWS and AgentCore
+.aws/
+.agentcore/
+.bedrock_agentcore/
+.bedrock_agentcore.yaml
+agent_package.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
