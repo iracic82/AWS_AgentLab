@@ -718,98 +718,217 @@ with mcp_client:
 
 ---
 
+## Prerequisites
+
+Before starting this lab, ensure you have:
+
+### Required
+- **Python 3.10+** - Check with `python3 --version`
+- **AWS Account** - With permissions for Bedrock, Cognito, and AgentCore
+- **AWS CLI configured** - Run `aws sts get-caller-identity` to verify
+- **Bedrock Model Access** - Claude models must be enabled in your AWS account
+
+### Enable Claude in Bedrock
+1. Go to AWS Console → Amazon Bedrock → Model access
+2. Click "Manage model access"
+3. Enable `Claude 3.5 Sonnet` (or the model used in the lab)
+4. Wait for access to be granted (usually instant)
+
+### Optional
+- **Infoblox CSP API key** - For real IPAM integration (lab uses mock data without it)
+- **uv/uvx** - For MCP servers (installed automatically by setup)
+
+---
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/iracic82/AWS_AgentLab.git
+cd AWS_AgentLab
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify AWS access
+aws sts get-caller-identity
+
+# Start the lab!
+python lab/exercises/step1_hello_agent.py
+```
+
+---
+
 ## Lab Steps
 
+Each step has:
+- **Exercise file** (`lab/exercises/`) - Contains TODOs for you to complete
+- **Solution file** (`lab/solutions/`) - Reference if you get stuck
+- **Test file** (`lab/tests/`) - Validates your implementation
+
 ### Step 1: Hello World Agent
-Create your first agent with Strands SDK and Bedrock.
+**Goal**: Create your first Strands agent connected to Bedrock.
+
+**You will learn**:
+- Import Strands SDK components
+- Configure BedrockModel with Claude
+- Create and invoke a basic Agent
+
 ```bash
+# Edit the exercise file and complete the TODOs
+code lab/exercises/step1_hello_agent.py
+
+# Run to test your implementation
 python lab/exercises/step1_hello_agent.py
+
+# Validate with test
 python lab/tests/test_step1.py
 ```
 
 ### Step 2: Weather Tool
-Build a custom `@tool` that fetches weather data.
+**Goal**: Build a custom tool using the `@tool` decorator.
+
+**You will learn**:
+- Create tools with `@tool` decorator
+- Make HTTP requests to external APIs
+- Return structured data from tools
+
 ```bash
+code lab/exercises/step2_weather_tool.py
 python lab/exercises/step2_weather_tool.py
 python lab/tests/test_step2.py
 ```
 
 ### Step 3: AWS Status Tool
-Create a tool that checks AWS service health.
+**Goal**: Build a tool that checks AWS service health.
+
+**You will learn**:
+- Parse RSS/XML data from web APIs
+- Build deployment decision logic
+- Combine multiple tools in one agent
+
 ```bash
+code lab/exercises/step3_aws_status_tool.py
 python lab/exercises/step3_aws_status_tool.py
 python lab/tests/test_step3.py
 ```
 
-### Step 3b: IPAM Tool (Infoblox CSP)
-Build enterprise integration with Infoblox for IP capacity checks.
+### Step 3b: IPAM Tool (Enterprise Integration)
+**Goal**: Integrate with Infoblox CSP for IP capacity checks.
+
+**You will learn**:
+- Enterprise API integration patterns
+- Handle API authentication with tokens
+- Build mock data fallbacks for testing
+
 ```bash
-# Optional: export IPAM_API_KEY=your_key (uses mock data without it)
+# Optional: Set real API key, otherwise uses mock data
+export IPAM_API_KEY=your_infoblox_csp_key
+
+code lab/exercises/step3b_ipam_tool.py
 python lab/exercises/step3b_ipam_tool.py
 python lab/tests/test_step3b.py
 ```
 
 ### Step 4: MCP Integration
-Connect to external MCP tool servers.
+**Goal**: Connect to external MCP (Model Context Protocol) servers.
+
+**You will learn**:
+- MCP architecture (local stdio servers)
+- Configure MCPClient with StdioServerParameters
+- Combine MCP tools with custom tools
+
 ```bash
+code lab/exercises/step4_mcp_integration.py
 python lab/exercises/step4_mcp_integration.py
 python lab/tests/test_step4.py
 ```
 
 ### Step 5: System Prompt Design
-Craft the agent's personality and response format.
+**Goal**: Design your agent's personality and response format.
+
+**You will learn**:
+- Write effective system prompts
+- Define agent behavior and response format
+- Create the complete DevOps Decision Agent
+
 ```bash
+code lab/exercises/step5_system_prompt.py
 python lab/exercises/step5_system_prompt.py
 python lab/tests/test_step5.py
 ```
 
 ### Step 6: Deploy to AgentCore
-Package and deploy your agent to AWS.
-```bash
-python lab/exercises/step6_agentcore_handler.py
-python lab/tests/test_step6.py
+**Goal**: Package and deploy your agent to AWS AgentCore.
 
-# Deploy to cloud
-agentcore configure -e lab/exercises/step6_agentcore_handler.py -r us-west-2 --disable-memory -n devops_agent
+**You will learn**:
+- AgentCore handler structure with `@app.entrypoint`
+- Configure and deploy using agentcore CLI
+- Invoke deployed agents
+
+```bash
+# Test locally first
+python lab/exercises/step6_agentcore_handler.py
+
+# Configure AgentCore
+agentcore configure -e lab/solutions/step6_agentcore_handler.py \
+    -r us-west-2 --disable-memory -n devops_agent
+
+# Deploy to AWS (takes ~5-10 minutes first time)
 agentcore deploy
+
+# Test deployed agent
 agentcore invoke '{"prompt": "Should I deploy to us-east-1?"}'
+
+# Check status
+agentcore status
 ```
 
 ### Step 7a: Cognito OAuth Setup
-Learn OAuth 2.0 by creating a Cognito User Pool.
+**Goal**: Learn OAuth 2.0 by creating a Cognito User Pool.
+
+**You will learn**:
+- OAuth 2.0 client credentials flow
+- Create Cognito User Pool, Domain, Resource Server
+- Obtain Bearer tokens programmatically
+
 ```bash
 python lab/exercises/step7a_cognito_oauth.py
-python lab/tests/test_step7a.py
+# This creates AWS resources and saves config to cognito_config.json
 ```
 
 ### Step 7b: Gateway Authentication
-Secure your agent with JWT authentication.
+**Goal**: Secure your agent with JWT authentication via AgentCore Gateway.
+
+**You will learn**:
+- Create AgentCore Gateway with custom JWT authorizer
+- Connect agent to Gateway using OAuth tokens
+- Remote MCP over HTTP with authentication
+
 ```bash
 python lab/exercises/step7b_gateway_auth.py
-python lab/tests/test_step7b.py
+# Uses cognito_config.json from Step 7a
 ```
 
 ---
 
-## Prerequisites
+## Cleanup
 
-- Python 3.10+
-- AWS account with Bedrock access (Claude models enabled)
-- AWS CLI configured
-- uv/uvx installed (for MCP): `pip install uv`
-- (Optional) Infoblox CSP API key
-
-## Quick Start
+**Important**: Clean up AWS resources when done to avoid charges!
 
 ```bash
-git clone https://github.com/iracic82/AWS_AgentLab.git
-cd AWS_AgentLab
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+# Destroy AgentCore deployment
+agentcore destroy
 
-# Start the lab!
-python lab/exercises/step1_hello_agent.py
+# Clean up Gateway (Step 7b)
+python lab/exercises/step7b_gateway_auth.py --cleanup
+
+# Clean up Cognito (Step 7a)
+python lab/exercises/step7a_cognito_oauth.py --cleanup
 ```
 
 ## Environment Variables
